@@ -1,23 +1,40 @@
-// const baseUrl = 'http://localhost:4000';
-// const response = await fetch(`${baseUrl}/guests`);
-// const allGuests = await response.json();
-// console.log(allGuests);
+import { useEffect, useState } from 'react';
 
-import { useState } from 'react';
-
-// Adding React component functions
-function Guest(props) {
-  return (
-    <div data-test-id="guest">
-      <h4>{props.user.firstName}</h4>
-      <h4>{props.user.lastName}</h4>
-    </div>
-  );
-}
+// function Guest(props) {
+//   return (
+//     <div data-test-id="guest">
+//       <h4>{props.guest.firstName}</h4>
+//       <h4>{props.guest.lastName}</h4>
+//     </div>
+//   );
+// }
 
 export default function App() {
   const [inputValueFirstName, setInputValueFirstName] = useState('');
   const [inputValueLastName, setInputValueLastName] = useState('');
+  const [guest, setGuest] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [checkBoxValue, setCheckBoxValue] = useState(false);
+
+  const baseUrl = 'http://localhost:4000';
+  async function fetchGuests() {
+    const response = await fetch(`${baseUrl}/guests`);
+    const allGuests = await response.json();
+
+    console.log(allGuests);
+  }
+
+  useEffect(() => {
+    fetchGuests().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (guest) {
+      setIsLoading(false);
+    }
+  }, [guest]);
+
+  if (!guest) return <div>Loading ...</div>;
 
   return (
     <div>
@@ -53,10 +70,18 @@ export default function App() {
           />
         </label>
       </form>
-      <button>Remove</button>
-      <div>
-        <Guest user={{ firstName: 'Michael', lastName: 'Schüssler' }} />
-      </div>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+      >
+        <button>Remove</button>
+      </form>
+      <input
+        form="checkbox"
+        checked={checkBoxValue}
+        onChange={(event) => setCheckBoxValue(event.currentTarget.checked)}
+      />
     </div>
   );
 }
