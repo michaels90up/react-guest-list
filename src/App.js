@@ -10,75 +10,127 @@ import { useEffect, useState } from 'react';
 // }
 
 export default function App() {
-  const [inputValueFirstName, setInputValueFirstName] = useState('');
-  const [inputValueLastName, setInputValueLastName] = useState('');
-  const [guest, setGuest] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [checkBoxValue, setCheckBoxValue] = useState(false);
+  const [valueFirstName, setValueFirstName] = useState('');
+  const [valueLastName, setValueLastName] = useState('');
 
-  const baseUrl = 'http://localhost:4000';
-  async function fetchGuests() {
-    const response = await fetch(`${baseUrl}/guests`);
-    const allGuests = await response.json();
+  const [guests, setGuests] = useState([]); // deciding on variable name
 
-    console.log(allGuests);
-  }
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    fetchGuests().catch(() => {});
-  }, []);
+  const [checkBoxValue, setCheckBoxValue] = useState(false); // necessary ?
+
+  const baseUrl = 'http://localhost:4000'; // correct ?
+
+  // Fetching data from API
 
   useEffect(() => {
-    if (guest) {
+    async function fetchGuests() {
+      setIsLoading(true);
+
+      const response = await fetch(`${baseUrl}/guests`);
+      const data = await response.json();
+      setGuests(data);
       setIsLoading(false);
     }
-  }, [guest]);
+    fetchGuests().catch((err) => {
+      err();
+    }); //
+  }, []);
 
-  if (!guest) return <div>Loading ...</div>;
+  // Adding guest
+
+  async function addGuest() {
+    const response = await fetch(`${baseUrl}/guests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        firstName: valueFirstName,
+        lastName: valueLastName,
+      }),
+    });
+    const createdGuest = await response.json();
+    setGuests([createdGuest, ...guests]);
+  }
+
+  // Removing guest
+
+  async function removeGuest(id) {
+    const response = await fetch(`${baseUrl}/guests/${id}`, {
+      method: 'DELETE',
+    });
+    const deletedGuest = await response.json();
+    setGuests(guests.filter((el) => el.id !== deletedGuest.id));
+  }
+
+  // Updating guest
+
+  async function updateGuest(id) {
+    const response = await fetch(`${baseUrl}/guests/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ attending: true }),
+    });
+    const updatedGuest = await response.json();
+    setGuests(
+      guests.map((el) => (el.id !== updatedGuest.id ? el : updatedGuest)),
+    );
+  }
+
+  // if (!guest) return <div>Loading ...</div>;
 
   return (
     <div>
       <h1>Guest List</h1>
       <p>Add your name to the guest list.</p>
       <form
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
+          await addGuest();
+          setValueFirstName('');
+          setValueLastName('');
         }}
       >
         <label>
           First name
           <input
-            value={inputValueFirstName}
-            onChange={(event) =>
-              setInputValueFirstName(event.currentTarget.value)
-            }
+            value={valueFirstName}
+            disabled={isLoading}
+            onChange={(event) => {
+              setValueFirstName(event.currentTarget.value);
+            }}
           />
         </label>
-      </form>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-        }}
-      >
         <label>
           Last name
           <input
-            value={inputValueLastName}
-            onChange={(event) =>
-              setInputValueLastName(event.currentTarget.value)
-            }
+            value={valueLastName}
+            disabled={isLoading}
+            onChange={(event) => {
+              setValueLastName(event.currentTarget.value);
+            }}
           />
         </label>
+        <button
+          onClick={async () => {
+            await removeGuest();
+          }}
+        >
+          Remove
+        </button>
       </form>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-        }}
-      >
-        <button>Remove</button>
-      </form>
+      {!isLoading ? (
+        <div>
+          <h2>Guest List:</h2>
+        </div>
+      ) : (
+        <div>Loading...</div>
+      )}
       <input
-        form="checkbox"
+        type="checkbox"
         checked={checkBoxValue}
         onChange={(event) => setCheckBoxValue(event.currentTarget.checked)}
       />
